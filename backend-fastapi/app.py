@@ -11,7 +11,11 @@ import json
 
 from fastapi import FastAPI, UploadFile, File
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 
+from pedalboard.io import AudioFile
+from pedalboard import *
+import noisereduce as nr
 import audio2numpy as a2n
 
 from prompts import PROMPTS, Prompt
@@ -26,6 +30,21 @@ from transformers import pipeline
 from langchain.llms import HuggingFacePipeline
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, AutoModelForSeq2SeqLM, BitsAndBytesConfig
 
+app = FastAPI()
+
+origins = [
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://localhost:3000'
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 asr_model_id = "openai/whisper-large-v3"
@@ -67,6 +86,38 @@ pipeline = pipeline(
 local_llm = HuggingFacePipeline(pipeline=pipeline)
 
 
+def delete_noise(upload_directory):
+    audio_files = [file for file in os.listdir(upload_directory) if file.endswith(".mp3")]
+
+    for audio_name in audio_files:
+        x, sr = a2n.audio_from_file(upload_directory + audio_name)
+        with AudioFile(upload_directory + audio_name).resampled_to(sr) as f:
+            audio = f.read(f.frames)
+
+        reduced_noise = nr.reduce_noise(y=audio, sr=sr, stationary=True, prop_decrease=1.0)
+
+        board = Pedalboard([
+            NoiseGate(threshold_db=-30, ratio=3, release_ms=250),
+            Compressor(threshold_db=-16, ratio=2.5),
+            LowShelfFilter(cutoff_frequency_hz=700, gain_db=10, q=1),
+            Gain(gain_db=10)
+        ])
+
+        effected = board(reduced_noise, sr)
+
+        with AudioFile(upload_directory + audio_name, 'w', sr,
+                       effected.shape[0]) as f:
+            f.write(effected)
+
+
+def clear_upload_directory(upload_directory):
+    audio_files = [file for file in os.listdir(upload_directory) if file.endswith(".mp3")]
+
+    for audio in audio_files:
+        file_path = upload_directory + audio
+        os.remove(file_path)
+
+
 def format_answer(answer):
     pattern = re.compile(r'thank you', re.IGNORECASE)
     replaced_text = re.sub(pattern, 'Верно', answer)
@@ -79,6 +130,8 @@ def format_answer(answer):
 
 def transcribe_audio(upload_directory):
     json_array = []
+    delete_noise(upload_directory)
+
     audio_files = [file for file in os.listdir(upload_directory) if file.endswith(".mp3")]
 
     for audio in audio_files:
@@ -102,14 +155,13 @@ def transcribe_audio(upload_directory):
                 print(transcribed_text_formated)
                 print(error, type(error))
                 audio_dict['errors'].append(error)
+                audio_dict['errors'].append(error)
             except:
                 continue
         json_array.append(audio_dict)
     print(json_array)
+    clear_upload_directory(upload_directory)
     return json_array
-
-
-app = FastAPI()
 
 
 @app.post('/upload/')
@@ -121,10 +173,10 @@ async def create_upload_file(file_uploads: List[UploadFile] = File(...)):
         with open(save_to, 'wb') as f:
             f.write(data)
 
-
     return transcribe_audio("uploaded_files/")
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="127.0.0.1", port=8000)
