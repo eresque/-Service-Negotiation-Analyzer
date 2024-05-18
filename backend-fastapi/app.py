@@ -142,24 +142,23 @@ def transcribe_audio(upload_directory):
         transcribed_text_formated = format_answer(transcribed_text)
 
         audio_dict["name"], audio_dict["text"] = str(audio), transcribed_text_formated
+        print(transcribed_text_formated)
 
         for prompt_components in PROMPTS:
             prompt = Prompt(
+                error_name=prompt_components["error_name"],
                 llm_instructions=prompt_components["llm_instructions"],
                 context=transcribed_text_formated,
                 question=prompt_components["question"])
             answer = local_llm(prompt.prompt)[len(prompt.prompt):]
-
-            try:
-                error = eval(answer)
-                print(transcribed_text_formated)
-                print(error, type(error))
-                audio_dict['errors'].append(error)
-                audio_dict['errors'].append(error)
-            except:
+            print(prompt_components["error_name"] + ":")
+            print(answer)
+            if "correct" in answer:
                 continue
-        json_array.append(audio_dict)
-    print(json_array)
+            audio_dict["errors"].append({"name_error": prompt_components["error_name"],
+                                         "text_error": answer})
+            json_array.append(audio_dict)
+
     clear_upload_directory(upload_directory)
     return json_array
 
