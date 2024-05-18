@@ -16,30 +16,7 @@ const ResultPage = (props: ResultPageProps): JSX.Element => {
         <div className="result-page">
             <h1 className="result-name">Результаты вычислений</h1>
 
-            {/* <div className="results">
-                <Block className='block-res'>
-                    <div className='list-dashboards'>
-                        <Block className='dashboard-1'>
-                            <img src={props.data['scratch.png']} alt="" />
-                        </Block>
-                        <Block className='dashboard-2'>
-                            <img src={props.data['linear.png']} alt="" />
-                        </Block>
-                    </div>
-                    <a
-                        className="download-results"
-                        href={props.data['prediction.xlsx']}
-                        download="Результаты вычислений"
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        <img className="icon-download" src={download} alt="Скачать результаты" />
-                        <h4 className="message-download">Скачать .xlsx</h4>
-                    </a>
-                </Block>
-            </div> */}
-
-            {/* <div className="results">
+            <div className="results">
                 {props.data.map((elem: any, index: React.Key) => {
                     return (
                         <>
@@ -54,30 +31,25 @@ const ResultPage = (props: ResultPageProps): JSX.Element => {
                                         </Block>
                                     </div>
                                     <div className='bottom-dashboards'>
-                                        {elem['errors'] ? 
-                                            <>
-                                                <h2>❌ Ошибки</h2>
-                                                <Block className='dashboard-2'>
-                                                    {elem['errors'].map((err: any, index: number) => {
-                                                        let key = index + 1;
-                                                        return (
-                                                            <>
-                                                                <h4>{key}. {err['name_error']}</h4>
-                                                                <p className='text-error'>"{err['text_error']}"</p>
-                                                            </>
-                                                        )
-                                                    })}
-                                                </Block>
-                                            </> : 
-                                            <h2>✅ Ошибок нет</h2>
-                                        }
+                                        <h2>❌ Ошибки</h2>
+                                        <Block className='dashboard-2'>
+                                            {elem['errors'].map((err: any, index: number) => {
+                                                let key = index + 1;
+                                                return (
+                                                    <>
+                                                        <h4>{key}. {err['name_error']}</h4>
+                                                        <p className='text-error'>"{err['text_error']}"</p>
+                                                    </>
+                                                )
+                                            })}
+                                        </Block>
                                     </div>
                                 </div>
                             </Block>
                         </>
                     )
                 })}
-            </div> */}
+            </div>
 
             <div className="help">
                 <div className="help-text">
