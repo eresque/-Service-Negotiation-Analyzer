@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import axios from 'axios';
-// import obj from '../../lol';
 import logo from '../../img/logo.png';
 import logoRJD from '../../img/logo_rjd.png';
 import cross from '../../img/black-cross.png';
+import loadingGif from '../../img/loading-gif.gif';
 import download from '../../img/download.svg';
 import Button from '../button/Button';
 import InputFile from '../inputFile/InputFile';
@@ -17,20 +17,19 @@ type SideBaeProps = {
 const SideBar = (props: SideBaeProps): JSX.Element => {
 
     const [files, setFiles] = useState<File[]>();
+    const [loading, setLoading] = useState<boolean>(false);
     const navigate = useNavigate();
 
     const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setLoading(true);
 
         if (files) {
             const formData = new FormData();
             [...files].forEach(file => {
-                formData.append('file_uploads', file)
+                formData.append('file_uploads', file);
             })
-            console.log(files)
-
-            // navigate('/result');
-            // props.setData(obj);
+            console.log(files);
 
             axios({
                 url: `http://127.0.0.1:8000/upload`,
@@ -40,18 +39,20 @@ const SideBar = (props: SideBaeProps): JSX.Element => {
             })
                 .then((response) => {
                     navigate('/result');
+                    setLoading(false);
                     console.log(response.data);
-                    props.setData(response.data)
-
+                    props.setData(response.data);
                 })
                 .catch((error) => {
                     navigate('/warning');
+                    setLoading(false);
                     console.log(error);
                     props.setData(undefined);
                 });
         }
         else {
             navigate('/warning');
+            setLoading(false);
             props.setData(undefined);
         }
     };
@@ -95,6 +96,7 @@ const SideBar = (props: SideBaeProps): JSX.Element => {
                             onClick={() => localStorage.clear()}
                         />
                     </div>
+                    { loading ? <img className="loading-gif" src={loadingGif} alt="загрузка" /> : null }
                 </form>
             </div>
         </div>
