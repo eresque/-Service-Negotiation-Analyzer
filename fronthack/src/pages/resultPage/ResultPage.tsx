@@ -19,34 +19,32 @@ const ResultPage = (props: ResultPageProps): JSX.Element => {
             <div className="results">
                 {props.data.map((elem: any, index: React.Key) => {
                     return (
-                        <>
-                            <Block className='block-res' key={index}>
-                                <div className='list-dashboards'>
-                                    <div className='top-dashboards'>
-                                        <h2>🔍 Распознано</h2>
-                                        <Block className='dashboard-1'>
-                                            <h3>{elem['name']}</h3>
-                                            <hr />
-                                            <p className='text-file'>"{elem['text']}"</p>
-                                        </Block>
-                                    </div>
-                                    <div className='bottom-dashboards'>
-                                        <h2>❌ Ошибки</h2>
-                                        <Block className='dashboard-2'>
-                                            {elem['errors'].map((err: any, index: number) => {
-                                                let key = index + 1;
-                                                return (
-                                                    <>
-                                                        <h4>{key}. {err['name_error']}</h4>
-                                                        <p className='text-error'>"{err['text_error']}"</p>
-                                                    </>
-                                                )
-                                            })}
-                                        </Block>
-                                    </div>
+                        <Block className='block-res' key={index}>
+                            <div className='list-dashboards'>
+                                <div className='top-dashboards'>
+                                    <h2>🔍 Распознано</h2>
+                                    <Block className='dashboard-1'>
+                                        <h3>{elem['name']}</h3>
+                                        <hr />
+                                        <p className='text-file'>"{elem['text']}"</p>
+                                    </Block>
                                 </div>
-                            </Block>
-                        </>
+                                <div className='bottom-dashboards'>
+                                    <h2>❌ Ошибки</h2>
+                                    <Block className='dashboard-2'>
+                                        {elem['errors'].map((err: any, index: number) => {  
+                                            let key = index + 1;
+                                            return (
+                                                <>
+                                                    <h4>{key}. {err['name_error']}</h4>
+                                                    <p className='text-error'>"{err['text_error']}"</p>
+                                                </>
+                                            )
+                                        })}
+                                    </Block>
+                                </div>
+                            </div>
+                        </Block>
                     )
                 })}
             </div>
