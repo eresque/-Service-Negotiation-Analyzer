@@ -45,12 +45,12 @@ docker-compose up
 Поднят langfuse по адресу `http://127.0.0.1:3000/`
 <br>**Переходите этой ссылке и пользуйтесь сервисом!**
 ### Подключение к backend
-В langfuse перейти во вкладку settings -> Create new API key
-Вставить сгенерированные ключи в `backend-fastapi/app.py` в:
+В веб-сервисе langfuse перейти во вкладку `settings -> Create new API key`.
+<br>Вставить сгенерированные ключи в `backend-fastapi/app.py` в:
 ```python
 langfuse = Langfuse(
-    secret_key="sk-lf-8b25f1cf-eb14-4676-85aa-ad163b91582c",
-    public_key="pk-lf-dfb47137-da23-46fd-a273-e99deb59fb32",
+    secret_key="your_secret_key",
+    public_key="your_public_key",
     host="http://localhost:3000"
 )
 ```
