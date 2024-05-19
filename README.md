@@ -8,40 +8,40 @@
 * langfuse - папка с файлами open source платформы мониторинга llm моделей langfuse
 ---
 ## Backend Deployment 
-### Требования
+### Требования:
 * Docker
-### Команды
+### Команды:
 ```commandline
 cd backhacks
 docker build -t my-python-app .
 docker run -d -p 8000:8000 my-python-app
 ```
-### Итог
+### Итог:
 Поднят backend по адресу `http://127.0.0.1:8000/`
 
 ## Frontend deployment 
-### Требования
+### Требования:
 * Docker
-### Команды
+### Команды:
 ```commandline
 cd fronthack 
 docker build -t my-react-app .
 docker run -p 5138:3000 my-react-app
 ```
-### Итог
+### Итог:
 Поднят frontend по адресу `http://localhost:5138/`
 <br>**Переходите этой ссылке и пользуйтесь сервисом!**
 
 ## Langfuse deployment
-### Требования
+### Требования:
 * Docker
 * Docker compose
-### Команды
+### Команды:
 ```commandline
 cd langfuse
 docker-compose up
 ```
-### Итог
+### Итог:
 Поднят langfuse по адресу `http://127.0.0.1:3000/`
 <br>**Переходите этой ссылке и пользуйтесь сервисом!**
 
