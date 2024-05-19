@@ -47,16 +47,18 @@ docker-compose up
 ### Подключение к backend
 В langfuse перейти во вкладку settings -> Create new API key
 Вставить сгенерированные ключи в `backend-fastapi/app.py` в:
-```
+```python
 langfuse = Langfuse(
     secret_key="sk-lf-8b25f1cf-eb14-4676-85aa-ad163b91582c",
     public_key="pk-lf-dfb47137-da23-46fd-a273-e99deb59fb32",
     host="http://localhost:3000"
 )
 ```
+
 Заметим, что это API ключи для **ЛОКАЛЬНО** поднятого open-source сервиса.
 <br>Никакие проприетарные интеграции не используются в проекте.
 <br>Проект в состоянии работать **без интернета** после первоначального запуска.
+
 ---
 ## Команда: ProDUCKtion
 * Артём Гордеев
