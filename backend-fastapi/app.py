@@ -1,41 +1,33 @@
-from fastapi import FastAPI, UploadFile, File, Request
-from fastapi.responses import FileResponse
-from fastapi.responses import JSONResponse
-
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
-import shutil
 import os
 import re
-import json
+
+from typing import List
 
 from fastapi import FastAPI, UploadFile, File
-from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 
-from pedalboard.io import AudioFile
 from pedalboard import *
 import noisereduce as nr
 import audio2numpy as a2n
+from pedalboard.io import AudioFile
+
+from langfuse import Langfuse
 
 from prompts import PROMPTS, Prompt
+from models import asr_pipe, local_llm, digitization_pipeline
 
-import torch
-
-from transformers import WhisperForConditionalGeneration
-from transformers import WhisperFeatureExtractor
-from transformers import WhisperTokenizer
-from transformers import pipeline
-
-from langchain.llms import HuggingFacePipeline
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, AutoModelForSeq2SeqLM, BitsAndBytesConfig
+langfuse = Langfuse(
+    secret_key="sk-lf-8b25f1cf-eb14-4676-85aa-ad163b91582c",
+    public_key="pk-lf-dfb47137-da23-46fd-a273-e99deb59fb32",
+    host="http://localhost:3000"
+)
 
 app = FastAPI()
 
 origins = [
-    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5138',
     'http://127.0.0.1:3000',
-    'http://localhost:5173',
+    'http://localhost:5138',
     'http://localhost:3000'
 ]
 app.add_middleware(
@@ -45,45 +37,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-asr_model_id = "openai/whisper-large-v3"
+use_digitisation = False
 
-feature_extractor = WhisperFeatureExtractor.from_pretrained(asr_model_id)
-tokenizer = WhisperTokenizer.from_pretrained(asr_model_id, language="russian", task="transcribe")
 
-model = WhisperForConditionalGeneration.from_pretrained(asr_model_id)
-forced_decoder_ids = tokenizer.get_decoder_prompt_ids(language="russian", task="transcribe")
+def langfuse_tracing(prompt, answer, span):
+    span.generation(
+        name="generation",
+        input={'question': prompt.question, 'contexts': prompt.context},
+        output={'answer': answer}
+    )
 
-asr_pipe = pipeline(
-    "automatic-speech-recognition",
-    model=model,
-    feature_extractor=feature_extractor,
-    tokenizer=tokenizer,
-    chunk_length_s=30,
-    stride_length_s=(4, 2),
-    device=device,
-    # language='ru'
-)
 
-model_id = 'IlyaGusev/saiga_llama3_8b'
-quantization_config = BitsAndBytesConfig(load_in_8bit=True,
-                                         llm_int8_threshold=200.0)
+def get_audio_sample(path):
+    x, sr = a2n.audio_from_file(path)
 
-tokenizer = AutoTokenizer.from_pretrained(model_id, )
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    quantization_config=quantization_config,
-    device_map='auto',
-)
-
-pipeline = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-)
-
-local_llm = HuggingFacePipeline(pipeline=pipeline)
+    return dict({
+        'path': path,
+        'array': x,
+        'sampling_rate': sr
+    })
 
 
 def delete_noise(upload_directory):
@@ -135,9 +108,18 @@ def transcribe_audio(upload_directory):
     audio_files = [file for file in os.listdir(upload_directory) if file.endswith(".mp3")]
 
     for audio in audio_files:
+        trace = langfuse.trace(name=audio)
+        span = trace.span(
+            name="Span",
+        )
+
         audio_dict = {"name": "",
                       "text": "",
                       "errors": []}
+
+        sample = get_audio_sample(upload_directory + audio) if use_digitisation else ""
+        diarized_text = digitization_pipeline(sample) if use_digitisation else ""
+
         transcribed_text = asr_pipe(inputs=upload_directory + audio)['text']
         transcribed_text_formated = format_answer(transcribed_text)
 
@@ -151,15 +133,17 @@ def transcribe_audio(upload_directory):
                 context=transcribed_text_formated,
                 question=prompt_components["question"])
             answer = local_llm(prompt.prompt)[len(prompt.prompt):]
-            print(prompt_components["error_name"] + ":")
-            print(answer)
+
+            langfuse_tracing(prompt, answer, span)
+
             if "correct" in answer:
                 continue
             audio_dict["errors"].append({"name_error": prompt_components["error_name"],
                                          "text_error": answer})
-            json_array.append(audio_dict)
 
+        json_array.append(audio_dict)
     clear_upload_directory(upload_directory)
+    langfuse.flush()
     return json_array
 
 
